@@ -1,19 +1,11 @@
 const ItemRepository = require('../repositories/ItemRepository');
 const logger = require('../utils/logger');
 
-/**
- * Item Service
- * Single Responsibility: Handle item business logic
- */
 class ItemService {
   constructor() {
     this.itemRepository = new ItemRepository();
   }
 
-  /**
-   * Get all items
-   * @returns {Promise<Array>}
-   */
   async getAllItems() {
     try {
       return await this.itemRepository.findAll();
@@ -23,11 +15,6 @@ class ItemService {
     }
   }
 
-  /**
-   * Get items by user
-   * @param {number} userId
-   * @returns {Promise<Array>}
-   */
   async getItemsByUser(userId) {
     try {
       return await this.itemRepository.findByUserId(userId);
@@ -37,11 +24,6 @@ class ItemService {
     }
   }
 
-  /**
-   * Get item by ID
-   * @param {number} id
-   * @returns {Promise<Object>}
-   */
   async getItemById(id) {
     try {
       const item = await this.itemRepository.findById(id);
@@ -55,12 +37,6 @@ class ItemService {
     }
   }
 
-  /**
-   * Create new item
-   * @param {Object} itemData
-   * @param {number} userId
-   * @returns {Promise<Object>}
-   */
   async createItem(itemData, userId) {
     try {
       const item = await this.itemRepository.create({
@@ -79,16 +55,8 @@ class ItemService {
     }
   }
 
-  /**
-   * Update item
-   * @param {number} id
-   * @param {Object} itemData
-   * @param {number} userId
-   * @returns {Promise<Object>}
-   */
   async updateItem(id, itemData, userId) {
     try {
-      // Check if item exists and belongs to user
       const existingItem = await this.itemRepository.findByIdAndUserId(id, userId);
       if (!existingItem) {
         throw new Error('Item not found or unauthorized');
@@ -104,15 +72,8 @@ class ItemService {
     }
   }
 
-  /**
-   * Delete item
-   * @param {number} id
-   * @param {number} userId
-   * @returns {Promise<boolean>}
-   */
   async deleteItem(id, userId) {
     try {
-      // Check if item exists and belongs to user
       const existingItem = await this.itemRepository.findByIdAndUserId(id, userId);
       if (!existingItem) {
         throw new Error('Item not found or unauthorized');
@@ -128,11 +89,6 @@ class ItemService {
     }
   }
 
-  /**
-   * Search items
-   * @param {string} searchTerm
-   * @returns {Promise<Array>}
-   */
   async searchItems(searchTerm) {
     try {
       return await this.itemRepository.searchByName(searchTerm);
@@ -142,12 +98,6 @@ class ItemService {
     }
   }
 
-  /**
-   * Get items with pagination
-   * @param {number} page
-   * @param {number} limit
-   * @returns {Promise<Object>}
-   */
   async getItemsWithPagination(page, limit) {
     try {
       return await this.itemRepository.findWithPagination(page, limit);

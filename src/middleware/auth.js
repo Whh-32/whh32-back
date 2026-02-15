@@ -1,13 +1,8 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 
-/**
- * Authentication Middleware
- * Single Responsibility: Verify JWT tokens and attach user to request
- */
 const authMiddleware = (req, res, next) => {
   try {
-    // Get token from header
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -17,7 +12,6 @@ const authMiddleware = (req, res, next) => {
       });
     }
 
-    // Extract token
     const token = authHeader.split(' ')[1];
 
     if (!token) {
@@ -27,10 +21,8 @@ const authMiddleware = (req, res, next) => {
       });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Add user info to request
     req.user = decoded;
     
     logger.debug(`User authenticated: ${decoded.username}`);

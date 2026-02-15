@@ -1,19 +1,11 @@
 const ItemService = require('../services/ItemService');
 const logger = require('../utils/logger');
 
-/**
- * Item Controller
- * Single Responsibility: Handle HTTP requests/responses for items
- * Depends on ItemService for business logic
- */
 class ItemController {
   constructor() {
     this.itemService = new ItemService();
   }
 
-  /**
-   * Get all items
-   */
   getAllItems = async (req, res, next) => {
     try {
       const { page, limit, search } = req.query;
@@ -21,7 +13,6 @@ class ItemController {
       let items;
 
       if (page && limit) {
-        // Paginated results
         const result = await this.itemService.getItemsWithPagination(
           parseInt(page),
           parseInt(limit)
@@ -32,10 +23,8 @@ class ItemController {
           data: result,
         });
       } else if (search) {
-        // Search results
         items = await this.itemService.searchItems(search);
       } else {
-        // All items
         items = await this.itemService.getAllItems();
       }
 
@@ -49,9 +38,6 @@ class ItemController {
     }
   };
 
-  /**
-   * Get items by current user
-   */
   getMyItems = async (req, res, next) => {
     try {
       const items = await this.itemService.getItemsByUser(req.user.id);
@@ -66,9 +52,6 @@ class ItemController {
     }
   };
 
-  /**
-   * Get item by ID
-   */
   getItemById = async (req, res, next) => {
     try {
       const item = await this.itemService.getItemById(parseInt(req.params.id));
@@ -89,9 +72,6 @@ class ItemController {
     }
   };
 
-  /**
-   * Create new item
-   */
   createItem = async (req, res, next) => {
     try {
       const item = await this.itemService.createItem(req.body, req.user.id);
@@ -106,9 +86,6 @@ class ItemController {
     }
   };
 
-  /**
-   * Update item
-   */
   updateItem = async (req, res, next) => {
     try {
       const item = await this.itemService.updateItem(
@@ -133,9 +110,6 @@ class ItemController {
     }
   };
 
-  /**
-   * Delete item
-   */
   deleteItem = async (req, res, next) => {
     try {
       await this.itemService.deleteItem(parseInt(req.params.id), req.user.id);

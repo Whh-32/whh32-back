@@ -1,10 +1,5 @@
 const Joi = require('joi');
 
-/**
- * Validation Schemas
- * Centralized validation rules using Joi
- */
-
 const registerSchema = Joi.object({
   username: Joi.string().alphanum().min(3).max(30).required().messages({
     'string.alphanum': 'Username must only contain alphanumeric characters',

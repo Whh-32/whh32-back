@@ -1,40 +1,34 @@
-const sql = require('mssql');
+const { Pool } = require('pg');
 const logger = require('../utils/logger');
 
-/**
- * Database Configuration - Singleton Pattern
- * Ensures single database connection pool throughout the application
- */
 class Database {
   constructor() {
     this.pool = null;
     this.config = {
-      server: process.env.DB_SERVER,
+      host: process.env.DB_HOST,
       port: parseInt(process.env.DB_PORT),
       database: process.env.DB_DATABASE,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
-      options: {
-        encrypt: process.env.DB_ENCRYPT === 'true',
-        trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE === 'true',
-        enableArithAbort: true,
-      },
-      pool: {
-        max: 10,
-        min: 0,
-        idleTimeoutMillis: 30000,
-      },
+      max: parseInt(process.env.DB_POOL_MAX) || 10,
+      min: parseInt(process.env.DB_POOL_MIN) || 0,
+      idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE) || 10000,
     };
   }
 
-  /**
-   * Get database connection pool
-   * @returns {Promise<sql.ConnectionPool>}
-   */
-  async getPool() {
+  getPool() {
     if (!this.pool) {
       try {
-        this.pool = await sql.connect(this.config);
+        this.pool = new Pool(this.config);
+        
+        this.pool.on('connect', () => {
+          logger.debug('New database connection established');
+        });
+
+        this.pool.on('error', (err) => {
+          logger.error('Unexpected error on idle client', err);
+        });
+
         logger.info('Database connection pool created successfully');
       } catch (error) {
         logger.error('Error creating database connection pool:', error);
@@ -44,38 +38,38 @@ class Database {
     return this.pool;
   }
 
-  /**
-   * Execute query with parameters
-   * @param {string} query - SQL query
-   * @param {Object} params - Query parameters
-   * @returns {Promise<sql.IResult>}
-   */
-  async query(query, params = {}) {
+  async query(text, params = []) {
     try {
-      const pool = await this.getPool();
-      const request = pool.request();
-
-      // Add parameters to request
-      Object.keys(params).forEach((key) => {
-        request.input(key, params[key]);
-      });
-
-      return await request.query(query);
+      const pool = this.getPool();
+      const start = Date.now();
+      const result = await pool.query(text, params);
+      const duration = Date.now() - start;
+      
+      logger.debug('Executed query', { text, duration, rows: result.rowCount });
+      
+      return result;
     } catch (error) {
       logger.error('Database query error:', error);
       throw error;
     }
   }
 
-  /**
-   * Close database connection
-   */
+  async getClient() {
+    try {
+      const pool = this.getPool();
+      return await pool.connect();
+    } catch (error) {
+      logger.error('Error getting database client:', error);
+      throw error;
+    }
+  }
+
   async close() {
     try {
       if (this.pool) {
-        await this.pool.close();
+        await this.pool.end();
         this.pool = null;
-        logger.info('Database connection closed');
+        logger.info('Database connection pool closed');
       }
     } catch (error) {
       logger.error('Error closing database connection:', error);
@@ -84,5 +78,4 @@ class Database {
   }
 }
 
-// Export singleton instance
 module.exports = new Database();

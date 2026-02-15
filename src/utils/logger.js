@@ -1,9 +1,5 @@
 const winston = require('winston');
 
-/**
- * Logger Configuration
- * Centralized logging utility
- */
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format: winston.format.combine(
@@ -14,14 +10,11 @@ const logger = winston.createLogger({
   ),
   defaultMeta: { service: 'auth-api' },
   transports: [
-    // Write errors to error.log
     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    // Write all logs to combined.log
     new winston.transports.File({ filename: 'logs/combined.log' }),
   ],
 });
 
-// If not in production, also log to console
 if (process.env.NODE_ENV !== 'production') {
   logger.add(
     new winston.transports.Console({

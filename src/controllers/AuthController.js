@@ -1,19 +1,11 @@
 const AuthService = require('../services/AuthService');
 const logger = require('../utils/logger');
 
-/**
- * Authentication Controller
- * Single Responsibility: Handle HTTP requests/responses for auth
- * Depends on AuthService for business logic
- */
 class AuthController {
   constructor() {
     this.authService = new AuthService();
   }
 
-  /**
-   * Register new user
-   */
   register = async (req, res, next) => {
     try {
       const result = await this.authService.register(req.body);
@@ -34,9 +26,6 @@ class AuthController {
     }
   };
 
-  /**
-   * Login user
-   */
   login = async (req, res, next) => {
     try {
       const { username, password } = req.body;
@@ -58,9 +47,6 @@ class AuthController {
     }
   };
 
-  /**
-   * Get current user profile
-   */
   getProfile = async (req, res, next) => {
     try {
       const user = await this.authService.getUserProfile(req.user.id);

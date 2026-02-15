@@ -7,25 +7,21 @@ const database = require('./config/database');
 const logger = require('./utils/logger');
 const errorHandler = require('./middleware/errorHandler');
 
-// Import routes
 const authRoutes = require('./routes/auth.routes');
 const itemRoutes = require('./routes/item.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging middleware
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path}`);
   next();
 });
 
-// Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
@@ -45,7 +41,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Welcome to Node.js Auth API with SQL Server',
+    message: 'Welcome to Node.js Auth API with PostgreSQL',
     data: {
       documentation: '/api-docs',
       endpoints: {
@@ -69,8 +65,8 @@ app.get('/', (req, res) => {
  */
 app.get('/health', async (req, res) => {
   try {
-    // Check database connection
-    await database.getPool();
+    const pool = database.getPool();
+    await pool.query('SELECT 1');
     
     res.json({
       success: true,
@@ -94,11 +90,9 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/items', itemRoutes);
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -106,14 +100,12 @@ app.use((req, res) => {
   });
 });
 
-// Error handler (must be last)
 app.use(errorHandler);
 
-// Start server
 const startServer = async () => {
   try {
-    // Test database connection
-    await database.getPool();
+    const pool = database.getPool();
+    await pool.query('SELECT 1');
     logger.info('Database connection established');
 
     app.listen(PORT, () => {
@@ -137,14 +129,9 @@ const startServer = async () => {
 ║      PUT    /api/items/:id - Update item                      ║
 ║      DELETE /api/items/:id - Delete item                      ║
 ║                                                                ║
-║   💾 Database: SQL Server (${process.env.DB_DATABASE})                         ║
+║   💾 Database: PostgreSQL (${process.env.DB_DATABASE})                        ║
 ║                                                                ║
 ║   📝 Architecture: SOLID Principles                            ║
-║      - Single Responsibility Principle                        ║
-║      - Open/Closed Principle                                  ║
-║      - Liskov Substitution Principle                          ║
-║      - Interface Segregation Principle                        ║
-║      - Dependency Inversion Principle                         ║
 ║                                                                ║
 ╚════════════════════════════════════════════════════════════════╝
       `);
@@ -157,7 +144,6 @@ const startServer = async () => {
   }
 };
 
-// Handle graceful shutdown
 process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing HTTP server');
   await database.close();

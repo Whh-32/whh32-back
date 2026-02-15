@@ -1,29 +1,26 @@
--- Create Items table
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Items')
-BEGIN
-    CREATE TABLE Items (
-        id INT IDENTITY(1,1) PRIMARY KEY,
-        name NVARCHAR(100) NOT NULL,
-        description NVARCHAR(500) NULL,
-        price DECIMAL(10, 2) NOT NULL,
-        category NVARCHAR(50) NULL,
-        user_id INT NOT NULL,
-        created_at DATETIME2 DEFAULT GETDATE(),
-        updated_at DATETIME2 DEFAULT GETDATE(),
-        CONSTRAINT FK_Items_Users FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
-        CONSTRAINT CHK_Price CHECK (price >= 0)
-    );
+-- Create items table
+CREATE TABLE IF NOT EXISTS items (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(500),
+    price DECIMAL(10, 2) NOT NULL CHECK (price >= 0),
+    category VARCHAR(50),
+    user_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_items_users FOREIGN KEY (user_id) 
+        REFERENCES users(id) ON DELETE CASCADE
+);
 
-    -- Create indexes
-    CREATE INDEX IDX_Items_UserId ON Items(user_id);
-    CREATE INDEX IDX_Items_Category ON Items(category);
-    CREATE INDEX IDX_Items_Name ON Items(name);
-    CREATE INDEX IDX_Items_CreatedAt ON Items(created_at DESC);
-    
-    PRINT 'Items table created successfully';
-END
-ELSE
-BEGIN
-    PRINT 'Items table already exists';
-END
-GO
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_items_user_id ON items(user_id);
+CREATE INDEX IF NOT EXISTS idx_items_category ON items(category);
+CREATE INDEX IF NOT EXISTS idx_items_name ON items(name);
+CREATE INDEX IF NOT EXISTS idx_items_created_at ON items(created_at DESC);
+
+-- Create trigger for items table
+DROP TRIGGER IF EXISTS update_items_updated_at ON items;
+CREATE TRIGGER update_items_updated_at
+    BEFORE UPDATE ON items
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

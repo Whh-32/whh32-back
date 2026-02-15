@@ -1,8 +1,3 @@
-/**
- * Validation Middleware
- * Single Responsibility: Validate incoming requests against schemas
- */
-
 const validate = (schema) => {
   return (req, res, next) => {
     const { error, value } = schema.validate(req.body, {
@@ -23,7 +18,6 @@ const validate = (schema) => {
       });
     }
 
-    // Replace request body with validated and sanitized data
     req.body = value;
     next();
   };

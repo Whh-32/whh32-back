@@ -16,7 +16,7 @@ const { createItemSchema, updateItemSchema } = require('../validators/schemas');
  * @swagger
  * /api/items:
  *   get:
- *     summary: Get all items (with optional pagination and search)
+ *     summary: Get all items
  *     tags: [Items]
  *     security:
  *       - bearerAuth: []
@@ -25,22 +25,17 @@ const { createItemSchema, updateItemSchema } = require('../validators/schemas');
  *         name: page
  *         schema:
  *           type: integer
- *         description: Page number for pagination
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
- *         description: Number of items per page
  *       - in: query
  *         name: search
  *         schema:
  *           type: string
- *         description: Search term for item name
  *     responses:
  *       200:
  *         description: Items retrieved successfully
- *       401:
- *         description: Unauthorized
  */
 router.get('/', authMiddleware, itemController.getAllItems);
 
@@ -55,8 +50,6 @@ router.get('/', authMiddleware, itemController.getAllItems);
  *     responses:
  *       200:
  *         description: User items retrieved successfully
- *       401:
- *         description: Unauthorized
  */
 router.get('/my', authMiddleware, itemController.getMyItems);
 
@@ -74,14 +67,9 @@ router.get('/my', authMiddleware, itemController.getMyItems);
  *         required: true
  *         schema:
  *           type: integer
- *         description: Item ID
  *     responses:
  *       200:
  *         description: Item retrieved successfully
- *       404:
- *         description: Item not found
- *       401:
- *         description: Unauthorized
  */
 router.get('/:id', authMiddleware, itemController.getItemById);
 
@@ -108,20 +96,14 @@ router.get('/:id', authMiddleware, itemController.getItemById);
  *                 example: Laptop
  *               description:
  *                 type: string
- *                 example: High performance laptop
  *               price:
  *                 type: number
  *                 example: 999.99
  *               category:
  *                 type: string
- *                 example: Electronics
  *     responses:
  *       201:
  *         description: Item created successfully
- *       400:
- *         description: Validation error
- *       401:
- *         description: Unauthorized
  */
 router.post('/', authMiddleware, validate(createItemSchema), itemController.createItem);
 
@@ -139,29 +121,15 @@ router.post('/', authMiddleware, validate(createItemSchema), itemController.crea
  *         required: true
  *         schema:
  *           type: integer
- *         description: Item ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               price:
- *                 type: number
- *               category:
- *                 type: string
  *     responses:
  *       200:
  *         description: Item updated successfully
- *       404:
- *         description: Item not found or unauthorized
- *       401:
- *         description: Unauthorized
  */
 router.put('/:id', authMiddleware, validate(updateItemSchema), itemController.updateItem);
 
@@ -179,14 +147,9 @@ router.put('/:id', authMiddleware, validate(updateItemSchema), itemController.up
  *         required: true
  *         schema:
  *           type: integer
- *         description: Item ID
  *     responses:
  *       200:
  *         description: Item deleted successfully
- *       404:
- *         description: Item not found or unauthorized
- *       401:
- *         description: Unauthorized
  */
 router.delete('/:id', authMiddleware, itemController.deleteItem);
 
