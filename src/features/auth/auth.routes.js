@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/AuthController');
-const authMiddleware = require('../middleware/auth');
-const validate = require('../middleware/validate');
-const { registerSchema, loginSchema } = require('../validators/schemas');
+const authController = require('./auth.controller');
+const AuthMiddleware = require('../../common/middleware/auth.middleware');
+const ValidateMiddleware = require('../../common/middleware/validate.middleware');
+const { registerSchema, loginSchema } = require('./auth.validator');
 
 /**
  * @swagger
@@ -50,7 +50,7 @@ const { registerSchema, loginSchema } = require('../validators/schemas');
  *       400:
  *         description: Bad request
  */
-router.post('/register', validate(registerSchema), authController.register);
+router.post('/register', ValidateMiddleware.validate(registerSchema), authController.register);
 
 /**
  * @swagger
@@ -80,7 +80,7 @@ router.post('/register', validate(registerSchema), authController.register);
  *       401:
  *         description: Invalid credentials
  */
-router.post('/login', validate(loginSchema), authController.login);
+router.post('/login', ValidateMiddleware.validate(loginSchema), authController.login);
 
 /**
  * @swagger
@@ -96,6 +96,6 @@ router.post('/login', validate(loginSchema), authController.login);
  *       401:
  *         description: Unauthorized
  */
-router.get('/me', authMiddleware, authController.getProfile);
+router.get('/me', AuthMiddleware.authenticate, authController.getProfile);
 
 module.exports = router;

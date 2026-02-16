@@ -1,14 +1,15 @@
-const ItemRepository = require('../repositories/ItemRepository');
-const logger = require('../utils/logger');
+const ItemsRepository = require('./items.repository');
+const logger = require('../../common/utils/logger');
+const AppError = require('../../common/errors/AppError');
 
-class ItemService {
+class ItemsService {
   constructor() {
-    this.itemRepository = new ItemRepository();
+    this.itemsRepository = new ItemsRepository();
   }
 
   async getAllItems() {
     try {
-      return await this.itemRepository.findAll();
+      return await this.itemsRepository.findAll();
     } catch (error) {
       logger.error('Error in getAllItems service:', error);
       throw error;
@@ -17,7 +18,7 @@ class ItemService {
 
   async getItemsByUser(userId) {
     try {
-      return await this.itemRepository.findByUserId(userId);
+      return await this.itemsRepository.findByUserId(userId);
     } catch (error) {
       logger.error('Error in getItemsByUser service:', error);
       throw error;
@@ -26,9 +27,9 @@ class ItemService {
 
   async getItemById(id) {
     try {
-      const item = await this.itemRepository.findById(id);
+      const item = await this.itemsRepository.findById(id);
       if (!item) {
-        throw new Error('Item not found');
+        throw new AppError('Item not found', 404);
       }
       return item;
     } catch (error) {
@@ -39,12 +40,12 @@ class ItemService {
 
   async createItem(itemData, userId) {
     try {
-      const item = await this.itemRepository.create({
+      const item = await this.itemsRepository.create({
         name: itemData.name,
         description: itemData.description || null,
         price: itemData.price,
         category: itemData.category || null,
-        user_id: userId,
+        userId,
       });
 
       logger.info(`Item created successfully by user ${userId}: ${item.name}`);
@@ -57,12 +58,12 @@ class ItemService {
 
   async updateItem(id, itemData, userId) {
     try {
-      const existingItem = await this.itemRepository.findByIdAndUserId(id, userId);
+      const existingItem = await this.itemsRepository.findByIdAndUserId(id, userId);
       if (!existingItem) {
-        throw new Error('Item not found or unauthorized');
+        throw new AppError('Item not found or unauthorized', 404);
       }
 
-      const updatedItem = await this.itemRepository.update(id, itemData);
+      const updatedItem = await this.itemsRepository.update(id, itemData);
       
       logger.info(`Item updated successfully by user ${userId}: ${updatedItem.name}`);
       return updatedItem;
@@ -74,15 +75,15 @@ class ItemService {
 
   async deleteItem(id, userId) {
     try {
-      const existingItem = await this.itemRepository.findByIdAndUserId(id, userId);
+      const existingItem = await this.itemsRepository.findByIdAndUserId(id, userId);
       if (!existingItem) {
-        throw new Error('Item not found or unauthorized');
+        throw new AppError('Item not found or unauthorized', 404);
       }
 
-      const deleted = await this.itemRepository.delete(id);
+      await this.itemsRepository.delete(id);
       
       logger.info(`Item deleted successfully by user ${userId}`);
-      return deleted;
+      return true;
     } catch (error) {
       logger.error('Error in deleteItem service:', error);
       throw error;
@@ -91,7 +92,7 @@ class ItemService {
 
   async searchItems(searchTerm) {
     try {
-      return await this.itemRepository.searchByName(searchTerm);
+      return await this.itemsRepository.searchByName(searchTerm);
     } catch (error) {
       logger.error('Error in searchItems service:', error);
       throw error;
@@ -100,7 +101,7 @@ class ItemService {
 
   async getItemsWithPagination(page, limit) {
     try {
-      return await this.itemRepository.findWithPagination(page, limit);
+      return await this.itemsRepository.findWithPagination(page, limit);
     } catch (error) {
       logger.error('Error in getItemsWithPagination service:', error);
       throw error;
@@ -108,4 +109,4 @@ class ItemService {
   }
 }
 
-module.exports = ItemService;
+module.exports = ItemsService;

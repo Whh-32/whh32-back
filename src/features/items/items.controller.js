@@ -1,9 +1,9 @@
-const ItemService = require('../services/ItemService');
-const logger = require('../utils/logger');
+const ItemsService = require('./items.service');
+const logger = require('../../common/utils/logger');
 
-class ItemController {
+class ItemsController {
   constructor() {
-    this.itemService = new ItemService();
+    this.itemsService = new ItemsService();
   }
 
   getAllItems = async (req, res, next) => {
@@ -13,7 +13,7 @@ class ItemController {
       let items;
 
       if (page && limit) {
-        const result = await this.itemService.getItemsWithPagination(
+        const result = await this.itemsService.getItemsWithPagination(
           parseInt(page),
           parseInt(limit)
         );
@@ -23,9 +23,9 @@ class ItemController {
           data: result,
         });
       } else if (search) {
-        items = await this.itemService.searchItems(search);
+        items = await this.itemsService.searchItems(search);
       } else {
-        items = await this.itemService.getAllItems();
+        items = await this.itemsService.getAllItems();
       }
 
       res.json({
@@ -40,7 +40,7 @@ class ItemController {
 
   getMyItems = async (req, res, next) => {
     try {
-      const items = await this.itemService.getItemsByUser(req.user.id);
+      const items = await this.itemsService.getItemsByUser(req.user.id);
 
       res.json({
         success: true,
@@ -54,7 +54,7 @@ class ItemController {
 
   getItemById = async (req, res, next) => {
     try {
-      const item = await this.itemService.getItemById(parseInt(req.params.id));
+      const item = await this.itemsService.getItemById(parseInt(req.params.id));
 
       res.json({
         success: true,
@@ -62,19 +62,13 @@ class ItemController {
         data: { item },
       });
     } catch (error) {
-      if (error.message === 'Item not found') {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
       next(error);
     }
   };
 
   createItem = async (req, res, next) => {
     try {
-      const item = await this.itemService.createItem(req.body, req.user.id);
+      const item = await this.itemsService.createItem(req.body, req.user.id);
 
       res.status(201).json({
         success: true,
@@ -88,7 +82,7 @@ class ItemController {
 
   updateItem = async (req, res, next) => {
     try {
-      const item = await this.itemService.updateItem(
+      const item = await this.itemsService.updateItem(
         parseInt(req.params.id),
         req.body,
         req.user.id
@@ -100,19 +94,13 @@ class ItemController {
         data: { item },
       });
     } catch (error) {
-      if (error.message.includes('not found') || error.message.includes('unauthorized')) {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
       next(error);
     }
   };
 
   deleteItem = async (req, res, next) => {
     try {
-      await this.itemService.deleteItem(parseInt(req.params.id), req.user.id);
+      await this.itemsService.deleteItem(parseInt(req.params.id), req.user.id);
 
       res.json({
         success: true,
@@ -120,15 +108,9 @@ class ItemController {
         data: null,
       });
     } catch (error) {
-      if (error.message.includes('not found') || error.message.includes('unauthorized')) {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
       next(error);
     }
   };
 }
 
-module.exports = new ItemController();
+module.exports = new ItemsController();

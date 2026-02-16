@@ -1,6 +1,6 @@
-# Node.js Authentication API with PostgreSQL
+# Node.js Authentication API with PostgreSQL & Prisma
 
-Complete production-ready Node.js REST API with JWT authentication, PostgreSQL database, and SOLID principles.
+Complete production-ready Node.js REST API with JWT authentication, PostgreSQL database, Prisma ORM, feature-based architecture, and SOLID principles.
 
 ## 🚀 Quick Start
 
@@ -14,60 +14,74 @@ docker-compose up -d postgres
 npm install
 ```
 
-### 3. Run migrations
+### 3. Setup environment variables
 ```bash
-npm run migrate
+cp .env.example .env
+# Edit .env with your database credentials
 ```
 
-### 4. Start the server
+### 4. Generate Prisma Client
+```bash
+npm run prisma:generate
+```
+
+### 5. Run migrations
+```bash
+npm run prisma:migrate
+```
+
+### 6. Start the server
 ```bash
 npm start
 # or for development
 npm run dev
 ```
 
-### 5. Access the API
+### 7. Access the API
 - API: http://localhost:3000
 - Swagger Docs: http://localhost:3000/api-docs
 - Health Check: http://localhost:3000/health
+- Prisma Studio: `npm run prisma:studio`
 
-## 📁 Project Structure
+## 📁 Project Structure (Feature-Based Architecture)
 
 ```
 ├── src/
-│   ├── config/
-│   │   ├── database.js          # PostgreSQL connection pool
-│   │   └── swagger.js            # API documentation config
-│   ├── controllers/
-│   │   ├── AuthController.js    # Auth HTTP handlers
-│   │   └── ItemController.js    # Item HTTP handlers
-│   ├── database/
-│   │   └── migrations/
-│   │       ├── 001_create_users_table.sql
-│   │       ├── 002_create_items_table.sql
-│   │       └── runMigrations.js
-│   ├── middleware/
-│   │   ├── auth.js              # JWT verification
-│   │   ├── errorHandler.js      # Error handling
-│   │   └── validate.js          # Request validation
-│   ├── repositories/
-│   │   ├── BaseRepository.js    # Base CRUD operations
-│   │   ├── UserRepository.js    # User data access
-│   │   └── ItemRepository.js    # Item data access
-│   ├── routes/
-│   │   ├── auth.routes.js       # Auth endpoints
-│   │   └── item.routes.js       # Item endpoints
-│   ├── services/
-│   │   ├── AuthService.js       # Auth business logic
-│   │   └── ItemService.js       # Item business logic
-│   ├── utils/
-│   │   └── logger.js            # Winston logger
-│   ├── validators/
-│   │   └── schemas.js           # Joi validation schemas
-│   └── server.js                # App entry point
-├── .env                         # Environment variables
+│   ├── common/                      # Shared modules
+│   │   ├── config/
+│   │   │   └── swagger.js          # API documentation config
+│   │   ├── database/
+│   │   │   └── prisma.client.js    # Prisma Client singleton
+│   │   ├── errors/
+│   │   │   ├── AppError.js         # Custom error class
+│   │   │   └── ErrorHandler.js     # Global error handler
+│   │   ├── middleware/
+│   │   │   ├── auth.middleware.js  # JWT verification
+│   │   │   └── validate.middleware.js # Request validation
+│   │   └── utils/
+│   │       └── logger.js           # Winston logger
+│   ├── features/                    # Feature-based modules
+│   │   ├── auth/
+│   │   │   ├── auth.controller.js  # Auth HTTP handlers
+│   │   │   ├── auth.service.js     # Auth business logic
+│   │   │   ├── auth.repository.js  # Auth data access (Prisma)
+│   │   │   ├── auth.routes.js      # Auth endpoints
+│   │   │   └── auth.validator.js   # Auth validation schemas
+│   │   └── items/
+│   │       ├── items.controller.js  # Items HTTP handlers
+│   │       ├── items.service.js    # Items business logic
+│   │       ├── items.repository.js # Items data access (Prisma)
+│   │       ├── items.routes.js    # Items endpoints
+│   │       └── items.validator.js  # Items validation schemas
+│   └── server.js                    # App entry point
+├── prisma/
+│   ├── schema.prisma               # Prisma schema definition
+│   ├── migrations/                 # Database migrations
+│   └── seed.js                     # Database seed (optional)
+├── prisma.config.ts                # Prisma configuration
+├── .env                            # Environment variables
 ├── .gitignore
-├── docker-compose.yml           # Docker configuration
+├── docker-compose.yml              # Docker configuration
 ├── Dockerfile
 ├── package.json
 └── README.md
@@ -83,7 +97,9 @@ POST /api/auth/register
 {
   "username": "johndoe",
   "email": "john@example.com",
-  "password": "password123"
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe"
 }
 ```
 
@@ -108,7 +124,17 @@ Authorization: Bearer YOUR_JWT_TOKEN
 ```bash
 GET /api/items
 GET /api/items?page=1&limit=10  # With pagination
-GET /api/items?search=laptop    # Search
+GET /api/items?search=laptop     # Search
+```
+
+**Get My Items**
+```bash
+GET /api/items/my
+```
+
+**Get Item by ID**
+```bash
+GET /api/items/:id
 ```
 
 **Create Item**
@@ -148,12 +174,8 @@ NODE_ENV=development
 JWT_SECRET=your_secret_key_min_32_characters
 JWT_EXPIRES_IN=24h
 
-# PostgreSQL
-DB_HOST=localhost
-DB_PORT=5432
-DB_DATABASE=authdb
-DB_USER=postgres
-DB_PASSWORD=postgres
+# PostgreSQL (Prisma)
+DATABASE_URL=postgresql://postgres:postgres@localhost:15432/authdb?schema=public
 ```
 
 ## 🐳 Docker Commands
@@ -161,9 +183,6 @@ DB_PASSWORD=postgres
 ```bash
 # Start PostgreSQL only
 docker-compose up -d postgres
-
-# Start both PostgreSQL and API
-docker-compose up -d
 
 # View logs
 docker logs postgres
@@ -176,60 +195,129 @@ docker-compose stop
 docker-compose down -v
 ```
 
-## 🏗️ SOLID Principles
+## 🏗️ Architecture & SOLID Principles
 
-- **S**ingle Responsibility - Each class has one job
-- **O**pen/Closed - Extend via inheritance, not modification
-- **L**iskov Substitution - Repositories are interchangeable
-- **I**nterface Segregation - Small, focused interfaces
-- **D**ependency Inversion - Depend on abstractions
+### Feature-Based Architecture
+- **Features**: Each feature (auth, items) is self-contained with its own controller, service, repository, routes, and validators
+- **Common**: Shared utilities, middleware, errors, and configurations
+- **Separation of Concerns**: Clear boundaries between layers
 
-## 📊 Database Schema
+### SOLID Principles Applied
 
-**Users Table:**
-- id (SERIAL PRIMARY KEY)
-- username (VARCHAR UNIQUE)
-- email (VARCHAR UNIQUE)
-- password (VARCHAR)
-- first_name, last_name (VARCHAR)
-- created_at, updated_at, last_login (TIMESTAMP)
+- **S**ingle Responsibility
+  - Each class has one clear responsibility
+  - Controllers handle HTTP, Services handle business logic, Repositories handle data access
 
-**Items Table:**
-- id (SERIAL PRIMARY KEY)
-- name (VARCHAR)
-- description (VARCHAR)
-- price (DECIMAL)
-- category (VARCHAR)
-- user_id (INTEGER FK → users)
-- created_at, updated_at (TIMESTAMP)
+- **O**pen/Closed
+  - Extend functionality through inheritance and composition
+  - Error handling is extensible via AppError class
+
+- **L**iskov Substitution
+  - Repository pattern allows swapping implementations
+  - Services depend on repository abstractions
+
+- **I**nterface Segregation
+  - Small, focused interfaces
+  - Each feature has its own validator, repository, service
+
+- **D**ependency Inversion
+  - High-level modules (services) depend on abstractions (repositories)
+  - Prisma Client is injected via singleton pattern
+
+## 📊 Database Schema (Prisma)
+
+**User Model:**
+```prisma
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  email     String    @unique
+  password  String
+  firstName String?
+  lastName  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  lastLogin DateTime?
+  items     Item[]
+}
+```
+
+**Item Model:**
+```prisma
+model Item {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Decimal
+  category    String?
+  userId      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+}
+```
 
 ## 🛠️ Tech Stack
 
-- Node.js + Express
-- PostgreSQL
-- JWT (jsonwebtoken)
-- bcryptjs (password hashing)
-- Joi (validation)
-- Winston (logging)
-- Swagger (API docs)
-- Docker
+- **Runtime**: Node.js + Express
+- **Database**: PostgreSQL
+- **ORM**: Prisma 7
+- **Authentication**: JWT (jsonwebtoken)
+- **Security**: bcryptjs (password hashing)
+- **Validation**: Joi
+- **Logging**: Winston
+- **Documentation**: Swagger/OpenAPI
+- **Containerization**: Docker
 
 ## 📝 Scripts
 
 ```bash
-npm start       # Start production server
-npm run dev     # Start development server (nodemon)
-npm run migrate # Run database migrations
+npm start              # Start production server
+npm run dev            # Start development server (nodemon)
+npm run prisma:generate    # Generate Prisma Client
+npm run prisma:migrate      # Create and apply migrations
+npm run prisma:migrate:deploy # Deploy migrations (production)
+npm run prisma:studio       # Open Prisma Studio (database GUI)
+npm run prisma:seed        # Seed database (if seed.js exists)
 ```
 
-## 🔒 Security
+## 🔒 Security Features
 
-- Password hashing with bcrypt
-- JWT authentication
-- Parameterized queries (SQL injection prevention)
-- Input validation
+- Password hashing with bcrypt (10 rounds)
+- JWT authentication with configurable expiration
+- Input validation with Joi
+- Parameterized queries via Prisma (SQL injection prevention)
 - CORS enabled
 - Environment variables for secrets
+- Error handling without exposing sensitive information
+
+## 🚀 Migration from Old Structure
+
+The project has been refactored from a layer-based to a feature-based architecture:
+
+**Before (Layer-based):**
+```
+src/
+├── controllers/
+├── services/
+├── repositories/
+└── routes/
+```
+
+**After (Feature-based):**
+```
+src/
+├── features/
+│   ├── auth/        # All auth-related code
+│   └── items/       # All items-related code
+└── common/          # Shared code
+```
+
+**Benefits:**
+- Better code organization
+- Easier to scale and add new features
+- Clear feature boundaries
+- Improved maintainability
 
 ## 📄 License
 
@@ -237,4 +325,4 @@ MIT
 
 ---
 
-**Made with ❤️ using SOLID principles and best practices**
+**Made with ❤️ using Prisma, Feature-Based Architecture, and SOLID Principles**

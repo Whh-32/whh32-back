@@ -2,26 +2,29 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
-const swaggerSpecs = require('./config/swagger');
-const database = require('./config/database');
-const logger = require('./utils/logger');
-const errorHandler = require('./middleware/errorHandler');
+const swaggerSpecs = require('./common/config/swagger');
+const prismaClient = require('./common/database/prisma.client');
+const logger = require('./common/utils/logger');
+const ErrorHandler = require('./common/errors/ErrorHandler');
 
-const authRoutes = require('./routes/auth.routes');
-const itemRoutes = require('./routes/item.routes');
+const authRoutes = require('./features/auth/auth.routes');
+const itemsRoutes = require('./features/items/items.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request logging
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path}`);
   next();
 });
 
+// Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
@@ -41,14 +44,15 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Welcome to Node.js Auth API with PostgreSQL',
+    message: 'Welcome to Node.js Auth API with PostgreSQL and Prisma',
     data: {
       documentation: '/api-docs',
       endpoints: {
         auth: '/api/auth',
         items: '/api/items',
       },
-      version: '1.0.0',
+      version: '2.0.0',
+      architecture: 'Feature-based with SOLID principles',
     },
   });
 });
@@ -65,9 +69,20 @@ app.get('/', (req, res) => {
  */
 app.get('/health', async (req, res) => {
   try {
-    const pool = database.getPool();
-    await pool.query('SELECT 1');
-    
+    const isHealthy = await prismaClient.healthCheck();
+
+    if (!isHealthy) {
+      return res.status(503).json({
+        success: false,
+        message: 'Service unavailable',
+        data: {
+          uptime: process.uptime(),
+          timestamp: new Date().toISOString(),
+          database: 'disconnected',
+        },
+      });
+    }
+
     res.json({
       success: true,
       message: 'Server is running',
@@ -90,9 +105,11 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/items', itemRoutes);
+app.use('/api/items', itemsRoutes);
 
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -100,12 +117,12 @@ app.use((req, res) => {
   });
 });
 
-app.use(errorHandler);
+// Error handler (must be last)
+app.use(ErrorHandler.handle);
 
 const startServer = async () => {
   try {
-    const pool = database.getPool();
-    await pool.query('SELECT 1');
+    await prismaClient.connect();
     logger.info('Database connection established');
 
     app.listen(PORT, () => {
@@ -129,13 +146,13 @@ const startServer = async () => {
 ║      PUT    /api/items/:id - Update item                      ║
 ║      DELETE /api/items/:id - Delete item                      ║
 ║                                                                ║
-║   💾 Database: PostgreSQL (${process.env.DB_DATABASE})                        ║
+║   💾 Database: PostgreSQL with Prisma                          ║
 ║                                                                ║
-║   📝 Architecture: SOLID Principles                            ║
+║   📝 Architecture: Feature-based with SOLID Principles         ║
 ║                                                                ║
 ╚════════════════════════════════════════════════════════════════╝
       `);
-      
+
       logger.info(`Server started on port ${PORT}`);
     });
   } catch (error) {
@@ -144,17 +161,20 @@ const startServer = async () => {
   }
 };
 
-process.on('SIGINT', async () => {
-  logger.info('SIGINT signal received: closing HTTP server');
-  await database.close();
-  process.exit(0);
-});
+// Graceful shutdown
+const gracefulShutdown = async (signal) => {
+  logger.info(`${signal} signal received: closing HTTP server`);
+  try {
+    await prismaClient.disconnect();
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+};
 
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
-  await database.close();
-  process.exit(0);
-});
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 startServer();
 

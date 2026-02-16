@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const itemController = require('../controllers/ItemController');
-const authMiddleware = require('../middleware/auth');
-const validate = require('../middleware/validate');
-const { createItemSchema, updateItemSchema } = require('../validators/schemas');
+const itemsController = require('./items.controller');
+const AuthMiddleware = require('../../common/middleware/auth.middleware');
+const ValidateMiddleware = require('../../common/middleware/validate.middleware');
+const { createItemSchema, updateItemSchema } = require('./items.validator');
 
 /**
  * @swagger
@@ -37,7 +37,7 @@ const { createItemSchema, updateItemSchema } = require('../validators/schemas');
  *       200:
  *         description: Items retrieved successfully
  */
-router.get('/', authMiddleware, itemController.getAllItems);
+router.get('/', AuthMiddleware.authenticate, itemsController.getAllItems);
 
 /**
  * @swagger
@@ -51,7 +51,7 @@ router.get('/', authMiddleware, itemController.getAllItems);
  *       200:
  *         description: User items retrieved successfully
  */
-router.get('/my', authMiddleware, itemController.getMyItems);
+router.get('/my', AuthMiddleware.authenticate, itemsController.getMyItems);
 
 /**
  * @swagger
@@ -71,7 +71,7 @@ router.get('/my', authMiddleware, itemController.getMyItems);
  *       200:
  *         description: Item retrieved successfully
  */
-router.get('/:id', authMiddleware, itemController.getItemById);
+router.get('/:id', AuthMiddleware.authenticate, itemsController.getItemById);
 
 /**
  * @swagger
@@ -105,7 +105,7 @@ router.get('/:id', authMiddleware, itemController.getItemById);
  *       201:
  *         description: Item created successfully
  */
-router.post('/', authMiddleware, validate(createItemSchema), itemController.createItem);
+router.post('/', AuthMiddleware.authenticate, ValidateMiddleware.validate(createItemSchema), itemsController.createItem);
 
 /**
  * @swagger
@@ -131,7 +131,7 @@ router.post('/', authMiddleware, validate(createItemSchema), itemController.crea
  *       200:
  *         description: Item updated successfully
  */
-router.put('/:id', authMiddleware, validate(updateItemSchema), itemController.updateItem);
+router.put('/:id', AuthMiddleware.authenticate, ValidateMiddleware.validate(updateItemSchema), itemsController.updateItem);
 
 /**
  * @swagger
@@ -151,6 +151,6 @@ router.put('/:id', authMiddleware, validate(updateItemSchema), itemController.up
  *       200:
  *         description: Item deleted successfully
  */
-router.delete('/:id', authMiddleware, itemController.deleteItem);
+router.delete('/:id', AuthMiddleware.authenticate, itemsController.deleteItem);
 
 module.exports = router;
